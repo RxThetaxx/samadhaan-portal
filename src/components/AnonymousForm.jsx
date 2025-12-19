@@ -31,7 +31,9 @@ const AnonymousForm = () => {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      await submitToSheet({ sheetName: 'sheet_1_anonymous', data: formState });
+      // FIX: Pass data first, then the sheet name as a second argument string
+      await submitToSheet(formState, 'Anonymous'); 
+      
       toast.success('Submission received. Thank you!');
       setFormState({ category: '', message: '' });
       setErrors({});
@@ -40,7 +42,9 @@ const AnonymousForm = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+};
+
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">

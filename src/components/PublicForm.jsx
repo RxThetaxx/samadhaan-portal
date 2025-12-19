@@ -58,20 +58,25 @@ const PublicForm = () => {
     event.preventDefault();
     const identityValid = validateIdentity();
     const grievanceValid = validateGrievance();
+    
     if (!identityValid || !grievanceValid) {
       return;
     }
+    
     setIsSubmitting(true);
+    
+    // Prepare the data object
+    const grievanceData = {
+        name: identity.name,
+        roll_number: identity.rollNumber,
+        email: identity.email,
+        grievance_text: grievanceText.trim(),
+    };
+
     try {
-      await submitToSheet({
-        sheetName: 'sheet_2_public',
-        data: {
-          name: identity.name,
-          roll_number: identity.rollNumber,
-          email: identity.email,
-          grievance_text: grievanceText.trim(),
-        },
-      });
+      // FIX: Pass data first, then the sheet name as a second argument string
+      await submitToSheet(grievanceData, 'Public');
+      
       toast.success('Grievance submitted successfully.');
       setGrievanceText('');
     } catch (error) {
@@ -79,7 +84,7 @@ const PublicForm = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+};
 
   const handleSchedulerReveal = () => {
     const identityValid = validateIdentity();
