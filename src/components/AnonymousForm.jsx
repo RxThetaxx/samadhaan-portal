@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { Loader2, Send } from 'lucide-react';
 import { submitToSheet } from '../utils/api.js';
 
 const categories = ['General', 'Event Issue', 'Team Conflict', 'Suggestion'];
@@ -24,6 +26,10 @@ const AnonymousForm = () => {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing/selecting
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -31,9 +37,8 @@ const AnonymousForm = () => {
     if (!validate()) return;
     setIsSubmitting(true);
     try {
-      // FIX: Pass data first, then the sheet name as a second argument string
-      await submitToSheet(formState, 'Anonymous'); 
-      
+      await submitToSheet(formState, 'Anonymous');
+
       toast.success('Submission received. Thank you!');
       setFormState({ category: '', message: '' });
       setErrors({});
@@ -42,39 +47,45 @@ const AnonymousForm = () => {
     } finally {
       setIsSubmitting(false);
     }
-};
-
-
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label htmlFor="category" className="text-sm font-medium text-slate-700">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-1">
+        <label htmlFor="category" className="bg-white px-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Category
         </label>
-        <select
-          id="category"
-          name="category"
-          value={formState.category}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-xl border px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.category ? 'border-red-300 ring-1 ring-red-500 focus:ring-red-500' : 'border-slate-200'
-          }`}
-        >
-          <option value="" disabled>
-            Select concern type
-          </option>
-          {categories.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-        {errors.category && <p className="mt-1 text-xs text-red-600">{errors.category}</p>}
+        <div className="relative">
+          <select
+            id="category"
+            name="category"
+            value={formState.category}
+            onChange={handleChange}
+            className={`block w-full appearance-none rounded-xl bg-slate-50/50 px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500 ${errors.category ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-200 hover:ring-slate-300'
+              }`}
+          >
+            <option value="" disabled>Select concern type...</option>
+            {categories.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+            <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+            </svg>
+          </div>
+        </div>
+        {errors.category && (
+          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-red-500">
+            {errors.category}
+          </motion.p>
+        )}
       </div>
 
-      <div>
-        <label htmlFor="message" className="text-sm font-medium text-slate-700">
+      <div className="space-y-1">
+        <label htmlFor="message" className="bg-white px-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Message
         </label>
         <textarea
@@ -83,24 +94,33 @@ const AnonymousForm = () => {
           rows={6}
           value={formState.message}
           onChange={handleChange}
-          className={`mt-1 block w-full rounded-xl border px-4 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.message ? 'border-red-300 ring-1 ring-red-500 focus:ring-red-500' : 'border-slate-200'
-          }`}
-          placeholder="Share the details you are comfortable disclosing."
+          className={`block w-full resize-y rounded-xl bg-slate-50/50 px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 ${errors.message ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-200 hover:ring-slate-300'
+            }`}
+          placeholder="Share the details you are comfortable disclosing..."
         />
-        {errors.message && <p className="mt-1 text-xs text-red-600">{errors.message}</p>}
+        {errors.message && (
+          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-red-500">
+            {errors.message}
+          </motion.p>
+        )}
       </div>
 
-      <button
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
         type="submit"
         disabled={isSubmitting}
-        className="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+        className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:shadow-indigo-500/40 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
       >
-        {isSubmitting && (
-          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />
+        {isSubmitting ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <>
+            <span>Submit Anonymously</span>
+            <Send className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </>
         )}
-        Submit Anonymously
-      </button>
+      </motion.button>
     </form>
   );
 };
