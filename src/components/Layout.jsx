@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
 import AnonymousForm from './AnonymousForm.jsx';
 import PublicForm from './PublicForm.jsx';
 
@@ -6,12 +8,12 @@ const tabs = [
   {
     id: 'anonymous',
     label: 'Anonymous Feedback',
-    description: 'Share concerns without revealing your identity.',
+    description: 'Share concern privately',
   },
   {
     id: 'public',
     label: 'Identified Support',
-    description: 'Submit a grievance or request a meeting.',
+    description: 'Get direct resolution',
   },
 ];
 
@@ -21,37 +23,59 @@ const Layout = () => {
   const activeCopy = useMemo(() => tabs.find((tab) => tab.id === activeTab), [activeTab]);
 
   return (
-    <section className="-mt-8 space-y-6">
-      <div className="rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <section className="space-y-8">
+      {/* Glassy Tab Switcher */}
+      <div className="mx-auto max-w-md rounded-2xl bg-white/40 p-1.5 shadow-lg shadow-indigo-500/10 backdrop-blur-md ring-1 ring-white/60">
+        <div className="grid grid-cols-2 gap-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={[
-                'rounded-lg px-4 py-3 text-left transition-all duration-200',
-                activeTab === tab.id
-                  ? 'bg-slate-900 text-white shadow-md'
-                  : 'text-slate-600 hover:bg-slate-100',
-              ].join(' ')}
+              className={clsx(
+                'relative flex flex-col items-center justify-center rounded-xl py-2.5 text-sm transition-all duration-300',
+                activeTab === tab.id ? 'text-indigo-900' : 'text-slate-500 hover:text-slate-700'
+              )}
             >
-              <p className="text-sm font-semibold">{tab.label}</p>
-              <p className="text-xs text-slate-300 sm:text-slate-400">{tab.description}</p>
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 rounded-xl bg-white shadow-sm ring-1 ring-black/5"
+                  transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <span className="relative z-10 font-semibold">{tab.label}</span>
+              <span className="relative z-10 text-[10px] opacity-80">{tab.description}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {activeCopy && (
-        <div className="rounded-xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">{activeCopy.label}</h2>
-          <p className="text-sm text-slate-500">{activeCopy.description}</p>
-          <div className="mt-6">
+      {/* Main Form Container */}
+      <AnimatePresence mode='wait'>
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.98 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="overflow-hidden rounded-3xl bg-white/70 p-6 shadow-xl shadow-indigo-500/5 backdrop-blur-2xl ring-1 ring-white/60 sm:p-10"
+        >
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-800">
+              {activeCopy.label}
+            </h2>
+            <p className="mt-2 text-slate-500">
+              {activeTab === 'anonymous'
+                ? 'Your identity will remain completely hidden. We value your honest feedback.'
+                : 'Share your details for a personalized resolution or to book a meeting.'}
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-2xl">
             {activeTab === 'anonymous' ? <AnonymousForm /> : <PublicForm />}
           </div>
-        </div>
-      )}
+        </motion.div>
+      </AnimatePresence>
     </section>
   );
 };
