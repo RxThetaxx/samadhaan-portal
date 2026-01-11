@@ -28,6 +28,49 @@ const PublicForm = () => {
     setShowScheduler(false);
   }, [mode]);
 
+  // --- LISTEN FOR CALENDLY BOOKING ---
+  useEffect(() => {
+    const handleCalendlyEvent = async (e) => {
+
+      // SECURITY: Ensure the sender is actually Calendly
+      if (e.origin !== "https://calendly.com") return;
+      // Check: Match BOTH common formats (Dot OR Underscore)
+      if (e.data.event === 'calendly.event.scheduled' || e.data.event === 'calendly.event_scheduled') {
+        
+        // Show loading toast immediately so user knows something is happening
+        const toastId = toast.loading('Finalizing booking details...');
+        
+        try {
+          const eventUri = e.data.payload.event.uri;
+          const inviteeUri = e.data.payload.invitee.uri;
+          
+          const scriptUrl = import.meta.env.VITE_GOOGLE_SCRIPT_URL;
+          const formData = new FormData();
+          formData.append('action', 'logMeeting');
+          formData.append('event_uri', eventUri);
+          formData.append('invitee_uri', inviteeUri);
+
+          await fetch(scriptUrl, { method: 'POST', body: formData });
+          
+          // Update loading toast to success
+          toast.success('Meeting confirmed and logged!', { id: toastId });
+          
+          // Reset Form
+          setIdentity(initialIdentity);
+          setShowScheduler(false);
+          
+        } catch (error) {
+          console.error("Meeting Log Error:", error);
+          // Don't panic the user; the meeting is booked in Calendly even if logging failed
+          toast.error("Booking successful, but failed to save to internal logs.", { id: toastId });
+        }
+      }
+    };
+
+    window.addEventListener('message', handleCalendlyEvent);
+    return () => window.removeEventListener('message', handleCalendlyEvent);
+  }, []);
+
   const validateIdentity = () => {
     const validationErrors = {};
     if (!identity.name.trim()) validationErrors.name = 'Name is required.';
@@ -61,9 +104,7 @@ const PublicForm = () => {
     const identityValid = validateIdentity();
     const grievanceValid = validateGrievance();
 
-    if (!identityValid || !grievanceValid) {
-      return;
-    }
+    if (!identityValid || !grievanceValid) return;
 
     setIsSubmitting(true);
 
@@ -79,19 +120,19 @@ const PublicForm = () => {
       toast.success('Grievance submitted successfully.');
       setGrievanceText('');
     } catch (error) {
-      toast.error(error.message || 'Network error, please try again.');
+      console.error("Submission error:", error);
+      toast.error('Failed to submit grievance. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleSchedulerReveal = () => {
-    const identityValid = validateIdentity();
-    if (identityValid) {
+    if (validateIdentity()) {
       setShowScheduler(true);
       toast.success('Identity verified. Scheduler unlocked.');
     } else {
-      toast.error('Please fix the highlighted fields.');
+      toast.error('Please complete all fields first.');
     }
   };
 
@@ -113,8 +154,9 @@ const PublicForm = () => {
             key={item.id}
             type="button"
             onClick={() => setMode(item.id)}
-            className={`relative flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-300 ${mode === item.id ? 'text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
+            className={`relative flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all duration-300 ${
+              mode === item.id ? 'text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
           >
             {mode === item.id && (
               <motion.div
@@ -142,8 +184,9 @@ const PublicForm = () => {
                 type={type}
                 value={identity[id]}
                 onChange={handleIdentityChange}
-                className={`block w-full rounded-xl bg-slate-50/50 px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500 ${errors[id] ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-200 hover:ring-slate-300'
-                  }`}
+                className={`block w-full rounded-xl bg-slate-50/50 px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset transition-all focus:bg-white focus:ring-2 focus:ring-indigo-500 ${
+                  errors[id] ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-200 hover:ring-slate-300'
+                }`}
                 placeholder={`Your ${label}...`}
               />
               {errors[id] && (
@@ -177,8 +220,9 @@ const PublicForm = () => {
                     setGrievanceText(event.target.value);
                     setErrors((prev) => ({ ...prev, grievanceText: undefined }));
                   }}
-                  className={`block w-full resize-y rounded-xl bg-slate-50/50 px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 ${errors.grievanceText ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-200 hover:ring-slate-300'
-                    }`}
+                  className={`block w-full resize-y rounded-xl bg-slate-50/50 px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-inset transition-all placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 ${
+                    errors.grievanceText ? 'ring-red-300 focus:ring-red-500' : 'ring-slate-200 hover:ring-slate-300'
+                  }`}
                   placeholder="Provide as much context as possible so we can help you effectively."
                 />
                 {errors.grievanceText && (
